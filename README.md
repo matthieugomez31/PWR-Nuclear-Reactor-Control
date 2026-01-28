@@ -1,46 +1,11 @@
-# PWR Nuclear Reactor Control System Simulation ☢️
+Pour charger le package de modèles dans OpenModelica, faire glisser dans l'interface OMEdit le fichier "package.mo"
 
-### 🚀 Project Overview
-Design and simulation of the control architecture for a Pressurized Water Reactor (PWR) primary circuit.
-The objective was to regulate the core temperature and pressure under variable load conditions while strictly adhering to safety margins (critical heat flux, overpressure protection).
-
-**Key Focus:** System Engineering, PID Control, Safety-Critical Logic, Thermodynamics.
-
-### 🛠 Tech Stack & Methods
-* **Simulation:** Modeling of thermal inertia and actuator dynamics (Valves/Pumps).
-* **Control Theory:** PID Regulation (Proportional-Integral-Derivative), Feedback Loops.
-* **Physics:** Fluid Mechanics, Heat Transfer equations.
-
-### 📊 Key Technical Challenges
-
-#### 1. Managing Thermal Inertia
-**The Problem:** The reactor core has significant thermal inertia. A simple reactive control leads to oscillations (instability).
-**The Solution:** Implemented a predictive control logic using the "Average Temperature" ($T_{avg}$) trend to adjust the control rods and turbine bypass valves *before* the temperature limits were breached.
-
-#### 2. The "Scram" Logic (Safety First)
-Designed the fail-safe logic algorithm:
-* *Condition:* If Pressure < $P_{min}$ OR Temperature > $T_{max}$.
-* *Action:* Trigger Emergency Shutdown (SCRAM) + Activate Safety Injection System (RIS).
-* Modeled the transient phase to ensure the cooling of residual heat.
-
-#### 3. Valve Flow Linearization
-Modeled the non-linear flow characteristics of the bypass valves and implemented a correction factor to linearize the system response for the PID controller.
-
-### 💻 Logic Snippet (Control Loop Concept)
-
-*Simplified logic of the regulation algorithm:*
-
-```python
-def reactor_control_loop(T_hot, T_cold, target_power):
-    T_avg = (T_hot + T_cold) / 2
-    error = T_ref - T_avg
-    
-    # PID Calculation for Control Rods speed
-    rod_speed = (Kp * error) + (Ki * error_sum) + (Kd * d_error_dt)
-    
-    # Safety Check (Redundancy)
-    if T_hot > MAX_TEMP_LIMIT:
-        trigger_scram()
-        return "EMERGENCY_STOP"
-    
-    return rod_speed
+Ce package est constitué de (à retrouver depuis l'arborescence des modèles dans OMEdit) :
+* La librairie ThermoSysPro V4.0.0 (une librairie open-source de modèles 0D-1D de thermodynamique, développée par EDF R&D)
+* Un fragment de la librairie BFE (une librairie propriétaire de modèles de blocs élémentaires de Contrôle-Commande, développée par EDF R&D). Il ne vous est fourni que le strict nécessaire pour simuler le modèle.
+* Le package cooling_system, comprenant :
+  * (dans Behavior) le modèle de comportement du système de refroidissement (trigramme "SRI" dans le lexique EDF). Vous aurez à compléter ce modèle pour ajouter une loi de commande des vannes réglantes (cf. partie II du sujet).
+  * (dans Verification) le modèle "Verif" à simuler pour vérifier que le modèle du SRI est conforme à ses exigences. Vous aurez à compléter ce modèle pour ajouter des exigences (cf. partie I du sujet) et des scénarios (cf. partie III du sujet). Pour ce faire, vous allez devoir créer de nouveaux modèles dans les trois packages suivants :
+    * "Scenarios"  : contient un ensemble de scénarios, à connecter au modèle SRI pour le simuler, via le port vert (un seul à la fois). Pour créer de nouveaux scénarios, il est conseillé de dupliquer l'un des deux scénarios existants (clic droit, puis "Duplicate"). De plus, il est interdit de changer la configuration initiale du scénario (au risque que le modèle ne soit plus simulable, avec de nouvelles conditions initiales). Tout nouveau scénario doit donc être défini au moyen d'événements survenant après l'instant initial (t > 0 s). Vous êtes invités à définir de nouveaux événements en dupliquant les événements existants (dans le package "Events").
+    * "Observers" : contient des modèles pour manipuler les variables disponibles dans le modèle physique afin de les mettre en forme pour l'exploitation dans les modèles d'exigences. Par exemple, le modèle "FlowToSpeed", convertit une grandeur de débit (issue du modèle physique) en une grandeur de vitesse (sur laquelle porte l'exigence). Vous êtes invités à définir de nouveaux observateurs en dupliquant celui-ci.
+    * "Exigences" : contient des modèles d'exigences. Une exigence doit prendre en entrée un ensemble de variable(s) issue(s) directement ou indirectement (ie. via les obervers) du modèle physique, et produire en sortie un booléen traduisant la satisfaction de l'exigence. Vous êtes invités à spécifier de nouvelles exigences (en dupliquant le modèle existant), sur la base du descriptif du système qui vous est fourni.
